@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ProspectAI — AI-Powered Email Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #141414;
+      --border: #222;
+      --accent: #c8f060;
+      --accent-dim: #a8d040;
+      --text: #f0ede8;
+      --text-muted: #666;
+      --text-mid: #999;
+      --radius: 12px;
+      --mono: 'DM Mono', monospace;
+      --serif: 'DM Serif Display', serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Subtle grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 80px 24px 120px;
+    }
+
+    /* Header */
+    header {
+      margin-bottom: 64px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .logo-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 3px 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-size: clamp(36px, 6vw, 56px);
+      line-height: 1.05;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 13px;
+      max-width: 440px;
+    }
+
+    /* Form card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s ease 0.1s both;
+    }
+
+    .field {
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 1px dashed #333;
+      border-radius: var(--radius);
+      padding: 36px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(200, 240, 96, 0.03);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon {
+      width: 36px;
+      height: 36px;
+      margin: 0 auto 12px;
+      color: var(--text-muted);
+    }
+
+    .upload-zone p {
+      color: var(--text-mid);
+      font-size: 13px;
+    }
+
+    .upload-zone span {
+      color: var(--accent);
+    }
+
+    .file-selected {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(200, 240, 96, 0.06);
+      border: 1px solid rgba(200, 240, 96, 0.2);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--accent);
+    }
+
+    /* Tone selector */
+    .tone-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .tone-option input { display: none; }
+
+    .tone-option label {
+      display: block;
+      text-align: center;
+      padding: 12px 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: var(--text-mid);
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    .tone-option input:checked + label {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(200, 240, 96, 0.06);
+    }
+
+    .tone-option label:hover {
+      border-color: #444;
+      color: var(--text);
+    }
+
+    /* Submit button */
+    .btn-generate {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      color: #0d0d0d;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-generate:hover { background: var(--accent-dim); }
+    .btn-generate:active { transform: scale(0.99); }
+    .btn-generate:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    /* Loading state */
+    .loader {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 0;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .loader.visible { display: flex; }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid #333;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    /* Results */
+    .results-section {
+      display: none;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .results-section.visible { display: block; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .results-title {
+      font-family: var(--serif);
+      font-size: 22px;
+      color: var(--text);
+    }
+
+    .results-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Download buttons */
+    .download-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .btn-download {
+      flex: 1;
+      padding: 11px 16px;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+      text-align: center;
+      display: block;
+    }
+
+    .btn-csv {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-mid);
+    }
+
+    .btn-csv:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-pdf {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-mid);
+    }
+
+    .btn-pdf:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Email cards */
+    .email-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+
+    .email-card:hover { border-color: #333; }
+
+    .email-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .email-company {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .email-sector {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      letter-spacing: 0.04em;
+    }
+
+    .email-toggle {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      transition: color 0.15s;
+    }
+
+    .email-card.open .email-toggle { color: var(--accent); }
+
+    .email-body {
+      display: none;
+      padding: 0 20px 20px;
+      color: var(--text-mid);
+      font-size: 13px;
+      line-height: 1.75;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      white-space: pre-wrap;
+    }
+
+    .email-card.open .email-body { display: block; }
+
+    /* Error */
+    .error-box {
+      display: none;
+      padding: 14px 18px;
+      border: 1px solid #5a1a1a;
+      background: #1a0a0a;
+      border-radius: 8px;
+      color: #ff6b6b;
+      font-size: 13px;
+      margin-top: 16px;
+    }
+
+    .error-box.visible { display: block; }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 80px;
+      text-align: center;
+      font-size: 11px;
+      color: #333;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div class="logo-tag">ProspectAI</div>
+      <h1>Generate <em>personalized</em><br/>outreach emails.</h1>
+      <p class="subtitle">Upload a CSV of companies, choose a tone, and get AI-crafted prospecting emails in seconds.</p>
+    </header>
+
+    <div class="card">
+      <div class="field">
+        <label>Upload your CSV file</label>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="csvFile" accept=".csv" />
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4M8 8l4-4 4 4"/>
+          </svg>
+          <p>Drop your file here or <span>browse</span></p>
+          <p style="font-size:11px;margin-top:4px;color:#444">Required columns: nom_entreprise, secteur</p>
+        </div>
+        <div class="file-selected" id="fileSelected">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <span id="fileName"></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Email tone</label>
+        <div class="tone-group">
+          <div class="tone-option">
+            <input type="radio" name="tonalite" id="tone1" value="professional" checked />
+            <label for="tone1">Professional</label>
+          </div>
+          <div class="tone-option">
+            <input type="radio" name="tonalite" id="tone2" value="casual" />
+            <label for="tone2">Casual</label>
+          </div>
+          <div class="tone-option">
+            <input type="radio" name="tonalite" id="tone3" value="direct" />
+            <label for="tone3">Direct</label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-generate" id="generateBtn" onclick="generate()">
+        Generate emails
+      </button>
+
+      <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <span id="loaderText">Generating emails with AI...</span>
+      </div>
+
+      <div class="error-box" id="errorBox"></div>
+    </div>
+
+    <div class="results-section" id="results">
+      <div class="results-header">
+        <div class="results-title">Generated emails</div>
+        <div class="results-count" id="resultsCount"></div>
+      </div>
+
+      <div class="download-row">
+        <a class="btn-download btn-csv" href="/download/csv">↓ Download CSV</a>
+        <a class="btn-download btn-pdf" href="/download/pdf">↓ Download PDF</a>
+      </div>
+
+      <div id="emailList"></div>
+    </div>
+
+    <footer>ProspectAI · Powered by Claude AI</footer>
+  </div>
+
+  <script>
+    // Drag & drop
+    const zone = document.getElementById('uploadZone');
+    const input = document.getElementById('csvFile');
+    const fileSelected = document.getElementById('fileSelected');
+    const fileName = document.getElementById('fileName');
+
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) {
+        input.files = e.dataTransfer.files;
+        showFile(e.dataTransfer.files[0].name);
+      }
+    });
+
+    input.addEventListener('change', () => {
+      if (input.files[0]) showFile(input.files[0].name);
+    });
+
+    function showFile(name) {
+      fileName.textContent = name;
+      fileSelected.style.display = 'flex';
+    }
+
+    // Generate
+    async function generate() {
+      const file = input.files[0];
+      const tonalite = document.querySelector('input[name="tonalite"]:checked').value;
+      const btn = document.getElementById('generateBtn');
+      const loader = document.getElementById('loader');
+      const errorBox = document.getElementById('errorBox');
+      const results = document.getElementById('results');
+
+      if (!file) {
+        showError('Please upload a CSV file first.');
+        return;
+      }
+
+      // UI state
+      btn.disabled = true;
+      loader.classList.add('visible');
+      errorBox.classList.remove('visible');
+      results.classList.remove('visible');
+
+      // Animate loader text
+      const texts = ['Generating emails with AI...', 'Crafting personalized messages...', 'Almost there...'];
+      let ti = 0;
+      const loaderText = document.getElementById('loaderText');
+      const textInterval = setInterval(() => {
+        ti = (ti + 1) % texts.length;
+        loaderText.textContent = texts[ti];
+      }, 2000);
+
+      try {
+        const formData = new FormData();
+        formData.append('csv', file);
+        formData.append('tonalite', tonalite);
+
+        const res = await fetch('/generate', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+
+        clearInterval(textInterval);
+        renderResults(data);
+      } catch (err) {
+        clearInterval(textInterval);
+        showError(err.message || 'An error occurred. Please try again.');
+      } finally {
+        btn.disabled = false;
+        loader.classList.remove('visible');
+      }
+    }
+
+    function renderResults(data) {
+      const results = document.getElementById('results');
+      const list = document.getElementById('emailList');
+      const count = document.getElementById('resultsCount');
+
+      count.textContent = `${data.length} email${data.length > 1 ? 's' : ''} generated`;
+      list.innerHTML = '';
+
+      data.forEach((item, i) => {
+        const card = document.createElement('div');
+        card.className = 'email-card';
+        card.innerHTML = `
+          <div class="email-card-header" onclick="toggleCard(this)">
+            <div>
+              <div class="email-company">${item.nom_entreprise}</div>
+              <div class="email-sector">${item.secteur}${item.site_web ? ' · ' + item.site_web : ''}</div>
+            </div>
+            <div class="email-toggle">View email</div>
+          </div>
+          <div class="email-body">${item.email_genere || 'No email generated.'}</div>
+        `;
+        list.appendChild(card);
+      });
+
+      results.classList.add('visible');
+    }
+
+    function toggleCard(header) {
+      const card = header.closest('.email-card');
+      const toggle = header.querySelector('.email-toggle');
+      card.classList.toggle('open');
+      toggle.textContent = card.classList.contains('open') ? 'Hide email' : 'View email';
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('errorBox');
+      box.textContent = msg;
+      box.classList.add('visible');
+    }
+  </script>
+</body>
+</html>
